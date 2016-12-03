@@ -7,14 +7,14 @@ using System.Collections.Generic;
 public class TaskManager : MonoBehaviour {
     
     /// <summary> The items that the user needs to collect. </summary>
-    [SerializeField]
     [Tooltip("The items that the user needs to collect.")]
-    private Item[] items;
+    public Item[] items;
     /// <summary> The item currently being tracked. </summary>
     [HideInInspector]
     public Item currentItem;
     /// <summary> The index of the item currently being tracked. </summary>
-    private int currentIndex = 0;
+    [HideInInspector]
+    public int currentIndex = 0;
     /// <summary> The waypoint closest to the current item. </summary>
     private Waypoint targetWaypoint;
     /// <summary> The waypoint closest to the user. </summary>
@@ -24,10 +24,21 @@ public class TaskManager : MonoBehaviour {
     /// <summary> The path navigator. </summary>
     private Navigator navigator;
 
+    /// <summary> The material of non-goal waypoints. </summary>
+    [SerializeField]
+    [Tooltip("The material of non-goal waypoints.")]
+    private Material waypointMaterial;
+    /// <summary> The material of goal waypoints. </summary>
+    [SerializeField]
+    [Tooltip("The material of goal waypoints.")]
+    private Material goalMaterial;
+
     /// <summary> The user of the application. </summary>
     private GameObject user;
     /// <summary> The line between the user and the next waypoint. </summary>
     private LineRenderer userLine;
+
+
 
     /// <summary> The singleton instance of the object. </summary>
     public static TaskManager instance {
@@ -60,12 +71,16 @@ public class TaskManager : MonoBehaviour {
     /// </summary>
     private void Update() {
         if (userLine != null) {
-            if (currentPath == null) {
-                FindTargetWaypoint();
-                currentPath = navigator.DrawShortestPath(navigator.GetClosestWaypoint(user.transform.position), targetWaypoint);
+            if (items.Length > currentIndex) {
+                if (currentPath == null) {
+                    FindTargetWaypoint();
+                    currentPath = navigator.DrawShortestPath(navigator.GetClosestWaypoint(user.transform.position), targetWaypoint);
+                }
+                userLine.SetPosition(1, user.transform.position + Vector3.down * 0.1f);
+                userLine.SetPosition(0, currentPath[0].transform.position);
+            } else {
+                userLine.gameObject.SetActive(false);
             }
-            userLine.SetPosition(1, user.transform.position + Vector3.down * 0.1f);
-            userLine.SetPosition(0, currentPath[0].transform.position);
         }
     }
 
@@ -73,9 +88,10 @@ public class TaskManager : MonoBehaviour {
     /// Checks if the scanned item matches the item being looked for.
     /// </summary>
     /// <returns>Whether the scanned item matches the item being looked for.</returns>
-    /// <param name="skuID">The ID of the item.</param>
+    /// <param name="skuID">The ID of the item to check.</param>
     public void CheckItem(long skuID) {
-        if (currentItem.skuID == skuID) {
+        if (currentItem != null && currentItem.skuID == skuID) {
+            ItemList.instance.CheckItem();
             if (!IncrementCurrentItem()) {
 
             }
@@ -89,8 +105,14 @@ public class TaskManager : MonoBehaviour {
     /// </summary>
     /// <returns>Whether there are any more items to look for.</returns>
     private bool IncrementCurrentItem() {
-        if (items.Length < currentIndex) {
-            currentItem = items[currentIndex++];
+        currentItem.collected = true;
+        if (items.Length > currentIndex) {
+            if (items.Length > ++currentIndex) {
+                currentItem = items[currentIndex];
+            } else {
+                currentItem = null;
+            }
+            currentPath = null;
             FindTargetWaypoint();
             return true;
         }
@@ -112,7 +134,13 @@ public class TaskManager : MonoBehaviour {
     /// Finds the waypoint closest to the target item.
     /// </summary>
     private void FindTargetWaypoint() {
-        targetWaypoint = navigator.GetClosestWaypoint(currentItem.transform.position);
+        if (targetWaypoint != null) {
+            targetWaypoint.GetComponent<Renderer>().material = waypointMaterial;
+        }
+        if (currentItem != null) {
+            targetWaypoint = navigator.GetClosestWaypoint(currentItem.transform.position);
+            targetWaypoint.GetComponent<Renderer>().material = goalMaterial;
+        }
     }
 
     /// <summary>
@@ -120,8 +148,8 @@ public class TaskManager : MonoBehaviour {
     /// </summary>
     /// <param name="waypoint">The waypoint that the user left.</param>
     public void LeaveWaypoint(Waypoint waypoint) {
-        if (currentPath.Count > 1) {
-            navigator.RemoveFirstLine();
+        navigator.RemoveFirstLine();
+        if (currentPath != null && currentPath.Count > 1) {
             currentPath.RemoveAt(0);
         }
     }
