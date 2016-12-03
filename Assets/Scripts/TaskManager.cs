@@ -36,9 +36,7 @@ public class TaskManager : MonoBehaviour {
     /// <summary> The user of the application. </summary>
     private GameObject user;
     /// <summary> The line between the user and the next waypoint. </summary>
-    private LineRenderer userLine;
-
-
+    private PathLine userLine;
 
     /// <summary> The singleton instance of the object. </summary>
     public static TaskManager instance {
@@ -61,7 +59,7 @@ public class TaskManager : MonoBehaviour {
         user = FindObjectOfType<Camera>().gameObject;
         if (items != null && items.Length > 0) {
             currentItem = items[0];
-            userLine = Instantiate(navigator.lineRenderer) as LineRenderer;
+            userLine = Instantiate(navigator.lineRenderer) as PathLine;
             userLine.name = "User Line";
         }
     }
@@ -76,8 +74,7 @@ public class TaskManager : MonoBehaviour {
                     FindTargetWaypoint();
                     currentPath = navigator.DrawShortestPath(navigator.GetClosestWaypoint(user.transform.position), targetWaypoint);
                 }
-                userLine.SetPosition(1, user.transform.position + Vector3.down * 0.1f);
-                userLine.SetPosition(0, currentPath[0].transform.position);
+                userLine.SetEndpoints(user.transform.position + Vector3.down * 0.5f, currentPath[0].transform.position);
             } else {
                 userLine.gameObject.SetActive(false);
             }

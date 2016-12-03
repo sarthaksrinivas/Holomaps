@@ -11,7 +11,7 @@ public class Navigator : MonoBehaviour {
 
     /// <summary> The line renderer prefab to make lines with. </summary>
     [Tooltip("The line renderer prefab to make lines with.")]
-    public LineRenderer lineRenderer;
+    public PathLine lineRenderer;
 
     /// <summary> Whether to check if all edges are two-way. </summary>
     [SerializeField]
@@ -135,9 +135,8 @@ public class Navigator : MonoBehaviour {
     /// <param name="start">The starting waypoint of the line.</param>
     /// <param name="end">The ending waypoint of the line.</param>
     private void DrawLine(Waypoint start, Waypoint end) {
-        LineRenderer line = Instantiate(lineRenderer) as LineRenderer;
-        line.SetPosition(0, start.transform.position);
-        line.SetPosition(1, end.transform.position);
+        PathLine line = Instantiate(lineRenderer) as PathLine;
+        line.SetEndpoints(start.transform.position, end.transform.position);
         line.transform.parent = pathLines.transform;
     }
 
